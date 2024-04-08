@@ -1,0 +1,17 @@
+[package]
+name = "nidrs-cli"
+version = "0.0.0"
+authors = ["WumaCoder <wumacoder@gmail.com>"]
+description = "a nidrs cli."
+edition = "2021"
+keywords = ["nidrs", "cli"]
+categories = [
+    "development-tools",
+    "utilities",
+    "system-programming",
+    "command-line-utilities",
+    "process-management"
+]
+homepage = "https://github.com/nidrs/nidrs-cli.git"
+repository = "https://github.com/nidrs/nidrs-cli.git"
+license = "MIT"

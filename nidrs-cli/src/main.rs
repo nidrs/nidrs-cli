@@ -1,36 +1,80 @@
-use clap::Parser;
+use clap::{Parser, Subcommand};
 
-/// Simple program to greet a person
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-struct Args {
-    /// Name of the person to greet
-    #[arg(short, long)]
-    name: String,
+#[derive(Parser)]
+#[clap(
+    name = "nidrs-cli",
+    version = "0.0.1",
+    author = "Wuma",
+    about = "nidrs cli helper."
+)]
+struct Cli {
+    #[clap(subcommand)]
+    command: Commands,
+}
 
-    /// Number of times to greet
-    #[arg(short, long, default_value_t = 1)]
-    count: u8,
+#[derive(Subcommand)]
+enum Commands {
+    /// create a new project
+    New {
+        /// Input file
+        #[clap()]
+        input: String,
+    },
+
+    /// run a project.
+    Start {
+        #[clap(help = "Output file")]
+        output: String,
+    },
+
+    /// build a project.
+    Build {
+        #[clap(help = "Output file")]
+        output: String,
+    },
+
+    /// generate module\controller\service\interceptor\dto code.
+    Gen {
+        #[clap(help = "Output file")]
+        output: String,
+    },
+
+    /// gpt generate code.
+    Chat {
+        #[clap(help = "Output file")]
+        output: String,
+    },
+
+    /// publish a nidrs module.
+    Publish {
+        #[clap(help = "Output file")]
+        output: String,
+    },
+
+    /// install a nidrs module.
+    Install {
+        #[clap(help = "Output file")]
+        output: String,
+    },
+
+    /// print nidrs info.
+    Print {
+        #[clap(help = "Output file")]
+        output: String,
+    },
 }
 
 fn main() {
-    let args = Args::parse();
+    let cli = Cli::parse();
 
-    for _ in 0..args.count {
-        println!("Hello {}!", args.name)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use assert_cmd::{output::OutputOkExt, Command};
-
-    #[test]
-    fn test_hello() {
-        let mut cmd = Command::cargo_bin("nidrs-cli").unwrap();
-        cmd.arg("--name").arg("Alice").arg("--count").arg("3");
-        cmd.assert().success();
-        // insta::assert_debug_snapshot!(cmd.output());
-    }
+    // match &cli.command {
+    //     Commands::Sub1 { input } => {
+    //         println!("Running subcommand 1 with input: {}", input);
+    //         // 在这里执行子命令 1 的逻辑
+    //     }
+    //     Commands::Sub2 { output } => {
+    //         println!("Running subcommand 2 with output: {}", output);
+    //         // 在这里执行子命令 2 的逻辑
+    //     }
+    // }
 }

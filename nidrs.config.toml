@@ -1,0 +1,6 @@
+[nidrs]
+workspace = true
+
+[scripts]
+start = "cargo run"
+build = "cargo build"

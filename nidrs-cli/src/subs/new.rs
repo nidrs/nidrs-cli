@@ -1,4 +1,6 @@
-use std::path::PathBuf;
+use std::{any, path::PathBuf};
+
+use toml::Table;
 
 /// eg: nid new . --name=project_name --template=template_name --yes
 #[derive(clap::Parser, Debug)]
@@ -21,22 +23,23 @@ impl NewCommand {
         // 2. git clone template
         // 3. replace template name
         // 4. git init
-        let cur_dir = std::env::current_dir().unwrap();
-        let is_init = self.target == ".";
+        let we = WorkEnv::new(std::env::current_dir().unwrap(), true).init();
+
+        let is_init = self.target == "."; // is init mode
         let (project_path, project_name) = if let Some(name) = &self.name {
             let name = name.to_string();
             let path = if is_init {
-                cur_dir
+                we.base_dir().clone()
             } else {
                 std::path::PathBuf::from(&self.target)
             };
             (path.join(&name), name)
         } else {
             let path = if is_init {
-                cur_dir
+                we.base_dir().clone()
             } else {
                 // 获取绝对路径
-                cur_dir.join(&self.target)
+                we.base_dir().clone().join(&self.target)
             };
             let name = path.file_name().unwrap().to_str().unwrap().to_string();
             (path, name)
@@ -93,38 +96,95 @@ impl NewCommand {
 
         let _ = std::fs::remove_dir_all(git_path);
 
+        if !we.is_init_git() || true {
+            // git init and print
+            let out = std::process::Command::new("git")
+                .arg("init")
+                .current_dir(&project_path)
+                .output()
+                .expect("failed to execute process");
+        }
+
         println!("success!")
     }
 }
 
-struct CurrentDirEnv {
+#[derive(Debug)]
+struct WorkEnv {
     cargo_toml: Option<PathBuf>,
-    src_dir: Option<PathBuf>,
     base_dir: PathBuf,
-    workspaces: Option<Vec<PathBuf>>,
     is_init_git: bool,
+    is_root: bool,
+    workspaces: Vec<WorkEnv>,
 }
 
-impl CurrentDirEnv {
-    fn new() -> Self {
-        let base_dir = std::env::current_dir().unwrap();
+impl WorkEnv {
+    fn new(base_dir: PathBuf, is_root: bool) -> Self {
         let cargo_toml = base_dir.join("Cargo.toml");
-        let src_dir = base_dir.join("src");
         let is_init_git = base_dir.join(".git").exists();
-        let workspaces = None;
+        let workspaces = vec![];
 
         Self {
             cargo_toml: Some(cargo_toml),
-            src_dir: Some(src_dir),
             base_dir,
             workspaces,
             is_init_git,
+            is_root: is_root,
         }
     }
 
-    fn read_cargo_toml(&self) -> String {
+    fn init(mut self) -> Self {
+        let cargo_toml = self.read_cargo_toml();
+        let workspace = cargo_toml.get("workspace");
+        if let Some(workspace) = workspace {
+            if let Some(workspace) = workspace.as_table() {
+                let members = workspace.get("members");
+                if let Some(members) = members {
+                    if let Some(members) = members.as_array() {
+                        for member in members {
+                            let member = member.as_str().unwrap();
+                            let member_path = self.base_dir.join(member);
+                            let we = WorkEnv::new(member_path, false);
+                            self.mut_workspace().push(we.init());
+                        }
+                    }
+                }
+            }
+        }
+
+        return self;
+    }
+
+    fn base_dir(&self) -> &PathBuf {
+        &self.base_dir
+    }
+
+    fn is_root(&self) -> bool {
+        self.is_root
+    }
+
+    fn is_init_git(&self) -> bool {
+        self.is_init_git
+    }
+
+    fn workspace(&self) -> &Vec<WorkEnv> {
+        self.workspaces.as_ref()
+    }
+
+    fn mut_workspace(&mut self) -> &mut Vec<WorkEnv> {
+        self.workspaces.as_mut()
+    }
+
+    fn read_cargo_toml(&self) -> Table {
         let cargo_toml = self.cargo_toml.as_ref().unwrap();
         let content = std::fs::read_to_string(cargo_toml).unwrap();
-        content
+        let table: Table = toml::from_str(&content).unwrap();
+        table
+    }
+
+    fn write_cargo_toml(&self, table: Table) {
+        let cargo_toml = self.cargo_toml.as_ref().unwrap();
+        let content = toml::to_string(&table).unwrap();
+        std::fs::write(cargo_toml, content).unwrap();
     }
 }

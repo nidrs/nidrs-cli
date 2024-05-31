@@ -124,7 +124,7 @@ impl NewCommand {
 
         for file in files {
             let content = std::fs::read_to_string(&file).unwrap();
-            let content = content.replace("$TEMPLATE_NAME", &project_name);
+            let content = content.replace("TEMPLATE_NAME", &project_name);
             std::fs::write(&file, content).unwrap();
         }
 

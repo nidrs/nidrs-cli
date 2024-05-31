@@ -59,33 +59,34 @@ impl NewCommand {
         //     (&project_path, &project_name, &template_url)
         // );
         // println!("debug: {:?}", self);
+        if !is_init {
+            let is_exists = project_path.exists();
 
-        let is_exists = project_path.exists();
+            let mut remove_yes = false;
 
-        let mut remove_yes = false;
+            if is_exists {
+                if !self.yes {
+                    let confirmation = dialoguer::Confirm::new()
+                        .with_prompt(format!("[nid] The `{project_name}` directory is about to be overwritten, Do you want to continue?"))
+                        .interact()
+                        .unwrap();
 
-        if is_exists {
-            if !self.yes {
-                let confirmation = dialoguer::Confirm::new()
-                    .with_prompt(format!("[nid] The `{project_name}` directory is about to be overwritten, Do you want to continue?"))
-                    .interact()
-                    .unwrap();
-
-                if confirmation {
+                    if confirmation {
+                        remove_yes = true;
+                    }
+                } else {
                     remove_yes = true;
                 }
-            } else {
-                remove_yes = true;
-            }
 
-            if remove_yes {
-                // remove project_path
-                let _ = std::fs::remove_dir_all(&project_path);
+                if remove_yes {
+                    // remove project_path
+                    let _ = std::fs::remove_dir_all(&project_path);
+                }
             }
-        }
-        if is_exists && !remove_yes {
-            println!("[nid] The `{project_name}` directory already exists, please change the project name or delete the directory.");
-            return;
+            if is_exists && !remove_yes {
+                println!("[nid] The `{project_name}` directory already exists, please change the project name or delete the directory.");
+                return;
+            }
         }
 
         // git clone
@@ -103,6 +104,29 @@ impl NewCommand {
         let git_path = project_path.join(".git");
 
         let _ = std::fs::remove_dir_all(git_path);
+
+        // replace template name
+        // each all files
+        let mut files = vec![];
+        let mut dirs = vec![project_path.clone()];
+        while let Some(dir) = dirs.pop() {
+            let entries = std::fs::read_dir(&dir).unwrap();
+            for entry in entries {
+                let entry = entry.unwrap();
+                let path = entry.path();
+                if path.is_dir() {
+                    dirs.push(path.clone());
+                } else {
+                    files.push(path);
+                }
+            }
+        }
+
+        for file in files {
+            let content = std::fs::read_to_string(&file).unwrap();
+            let content = content.replace("$TEMPLATE_NAME", &project_name);
+            std::fs::write(&file, content).unwrap();
+        }
 
         if !we.is_init_git() {
             // git init and print
@@ -231,7 +255,7 @@ impl WorkEnv {
 
     fn read_cargo_toml(&self) -> Table {
         let cargo_toml = self.cargo_toml.as_ref().unwrap();
-        let content = std::fs::read_to_string(cargo_toml).unwrap();
+        let content = std::fs::read_to_string(cargo_toml).unwrap_or("".to_string());
         let table: Table = toml::from_str(&content).unwrap();
         table
     }

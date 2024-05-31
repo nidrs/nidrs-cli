@@ -67,7 +67,7 @@ impl NewCommand {
         if is_exists {
             if !self.yes {
                 let confirmation = dialoguer::Confirm::new()
-                    .with_prompt(format!("The `{project_name}` directory is about to be overwritten, Do you want to continue?"))
+                    .with_prompt(format!("[nid] The `{project_name}` directory is about to be overwritten, Do you want to continue?"))
                     .interact()
                     .unwrap();
 
@@ -84,7 +84,7 @@ impl NewCommand {
             }
         }
         if is_exists && !remove_yes {
-            println!("The `{project_name}` directory already exists, please change the project name or delete the directory.");
+            println!("[nid] The `{project_name}` directory already exists, please change the project name or delete the directory.");
             return;
         }
 
@@ -93,6 +93,7 @@ impl NewCommand {
             "git",
             std::process::Command::new("git")
                 .arg("clone")
+                .arg("--progress")
                 .arg(&template_url)
                 .arg(&project_path),
         )
@@ -114,14 +115,14 @@ impl NewCommand {
                 .expect("failed to execute process");
         }
 
-        println!("success!")
+        println!("[nid] success!")
     }
 }
 
 fn exec_cmd(prefix: &str, cmd: &mut std::process::Command) -> Result<(), anyhow::Error> {
     let mut child = cmd
-        .stdout(std::process::Stdio::inherit())
-        .stderr(std::process::Stdio::inherit())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
         .spawn()
         .expect("failed to execute process");
 
@@ -129,7 +130,9 @@ fn exec_cmd(prefix: &str, cmd: &mut std::process::Command) -> Result<(), anyhow:
         let reader = std::io::BufReader::new(stderr);
         for line in reader.lines() {
             if let Ok(line) = line {
-                eprintln!("[{}] {}", prefix, line);
+                line.split("\r").for_each(|line| {
+                    eprintln!("[{}] {}", prefix, line);
+                });
             }
         }
     }
@@ -138,7 +141,9 @@ fn exec_cmd(prefix: &str, cmd: &mut std::process::Command) -> Result<(), anyhow:
         let reader = std::io::BufReader::new(stdout);
         for line in reader.lines() {
             if let Ok(line) = line {
-                println!("[{}] {}", prefix, line);
+                line.split("\r").for_each(|line| {
+                    println!("[{}] {}", prefix, line);
+                });
             }
         }
     }

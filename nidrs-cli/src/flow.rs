@@ -13,6 +13,15 @@ pub struct Action {
     handler: Box<dyn Handler>,
 }
 
+impl Action {
+    pub fn new<K: Into<String>, F: Handler + 'static>(name: K, handler: F) -> Self {
+        Self {
+            name: name.into(),
+            handler: Box::new(handler),
+        }
+    }
+}
+
 pub struct Flow {
     name: String,
     steps: Vec<Action>,
@@ -164,14 +173,8 @@ mod tests {
         }
 
         let flow = Flow::new("test".to_string())
-            .action(Action {
-                name: "test".to_string(),
-                handler: Box::new(TestHandler),
-            })
-            .action(Action {
-                name: "test2".to_string(),
-                handler: Box::new(TestHandler2),
-            });
+            .action(Action::new("test", TestHandler))
+            .action(Action::new("test2", TestHandler2));
 
         let payload = Some(Box::new("test".to_string()) as Box<dyn any::Any>);
         let res = flow.run(payload).unwrap().unwrap();

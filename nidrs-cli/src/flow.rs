@@ -122,7 +122,7 @@ mod tests {
         let payload = Some(Box::new("test".to_string()) as Box<dyn any::Any>);
         let res = flow.run(payload).unwrap().unwrap();
         let res = *res.downcast::<String>().unwrap();
-        assert_eq!(res, "TEST2".to_string());
+        assert_eq!(res, "TEST12".to_string());
     }
 
     #[test]

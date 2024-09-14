@@ -1,7 +1,7 @@
 use std::any;
 
 #[derive(Debug)]
-struct HandlerError(Box<dyn any::Any>, anyhow::Error);
+pub struct HandlerError(Box<dyn any::Any>, anyhow::Error);
 
 pub trait Handler {
     fn run(&self, payload: Box<dyn any::Any>) -> Result<Box<dyn any::Any>, HandlerError>;

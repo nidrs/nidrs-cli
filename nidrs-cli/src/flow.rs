@@ -28,9 +28,9 @@ pub struct Flow {
 }
 
 impl Flow {
-    pub fn new(name: String) -> Self {
+    pub fn new<K: Into<String>>(name: K) -> Self {
         Self {
-            name,
+            name: name.into(),
             steps: vec![],
         }
     }

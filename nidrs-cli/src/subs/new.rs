@@ -9,7 +9,7 @@ use toml::Table;
 
 /// eg: nid new . --name=project_name --template=template_name --yes
 #[derive(clap::Parser, Debug)]
-pub struct NewCommand {
+pub struct New {
     target: String,
 
     #[clap(short, long)]
@@ -22,7 +22,7 @@ pub struct NewCommand {
     yes: bool,
 }
 
-impl NewCommand {
+impl New {
     pub fn run(&self) {
         // 1. check init or create dir
         // 2. git clone template

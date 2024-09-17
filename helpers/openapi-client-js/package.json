@@ -1,0 +1,51 @@
+{
+  "name": "@nidrs/openapi-client-js",
+  "version": "0.1.0",
+  "description": "nidrs openapi client js helper tools.",
+  "author": "Lydanne <1829913225@qq.com>",
+  "homepage": "https://github.com/nidrs/nidrs-cli/helpers/openapi-client-js#readme",
+  "license": "MIT",
+  "main": "index.js",
+  "module": "lib/openapi-client-js.esm.js",
+  "miniprogram": "./",
+  "typings": "./types/index.d.ts",
+  "directories": {
+    "lib": "lib",
+    "test": "tests"
+  },
+  "files": [
+    "lib",
+    "src",
+    "types"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nidrs/nidrs-cli.git"
+  },
+  "scripts": {
+    "build": "rollup --config rollup.config.ts --configPlugin typescript",
+    "dev": "rollup --config rollup.config.ts --configPlugin typescript -w",
+    "test": "jest"
+  },
+  "bugs": {
+    "url": "https://github.com/nidrs/nidrs-cli/issues"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.25.4",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@types/jest": "^29.5.13",
+    "@types/node": "22.5.5",
+    "babel-jest": "^29.7.0",
+    "jest": "^29.7.0",
+    "rollup": "^4.21.3",
+    "rollup-plugin-typescript2": "^0.36.0",
+    "ts-jest": "^29.2.5",
+    "tslib": "^2.7.0",
+    "typescript": "^5.6.2"
+  }
+}

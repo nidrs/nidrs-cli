@@ -1,11 +1,15 @@
 mod new;
+mod openapi;
 
 use clap::Subcommand;
 
 #[derive(Subcommand)]
 pub enum Commands {
     /// create a new project
-    New(new::NewCommand),
+    New(new::New),
+
+    /// build openapi request api.
+    Openapi(openapi::Openapi),
 
     /// run a project.
     Start {
@@ -54,6 +58,7 @@ impl Commands {
     pub fn run(&self) {
         match self {
             Commands::New(new) => new.run(),
+            Commands::Openapi(openapi) => openapi.run(),
             _ => println!("Running command"),
         }
     }

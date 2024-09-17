@@ -1,11 +1,10 @@
 use std::any;
 
-#[derive(Debug)]
-pub struct HandlerError(Box<dyn any::Any>, anyhow::Error);
+use metamap::Metamap;
 
 pub trait Handler {
-    fn run(&self, payload: Box<dyn any::Any>) -> Result<Box<dyn any::Any>, HandlerError>;
-    fn rollback(&self, payload: Box<dyn any::Any>) -> Result<Box<dyn any::Any>, HandlerError>;
+    fn execute(&self, payload: &mut Metamap) -> Result<(), anyhow::Error>;
+    fn rollback(&self, payload: &mut Metamap) -> Result<(), anyhow::Error>;
 }
 
 pub struct Action {
@@ -40,38 +39,30 @@ impl Flow {
         self
     }
 
-    pub fn run(
-        self,
-        mut payload: Option<Box<dyn any::Any>>,
-    ) -> Result<Option<Box<dyn any::Any>>, anyhow::Error> {
+    pub fn execute(self, payload: &mut Metamap) -> Result<(), anyhow::Error> {
         for (index, step) in self.steps.iter().enumerate() {
-            println!("[{}] Running: {}", index, step.name);
-            let r = step.handler.run(payload.take().unwrap());
+            println!("[{}] Executing: {}", index, step.name);
+            let r = step.handler.execute(payload);
             if let Err(e) = r {
-                println!("[{}] Error: {}", index, e.1);
-                payload = Some(e.0);
-                return self.rollback(index, payload);
-            } else if let Ok(v) = r {
-                payload = Some(v);
+                println!("[{}] Execution failed: {}", index, e);
+                self.rollback(index, payload)?;
+                return Err(e);
+            } else {
+                println!("[{}] Execution success", index);
             }
         }
-        Ok(payload)
+        Ok(())
     }
 
-    pub fn rollback(
-        &self,
-        index: usize,
-        mut payload: Option<Box<dyn any::Any>>,
-    ) -> Result<Option<Box<dyn any::Any>>, anyhow::Error> {
+    pub fn rollback(&self, index: usize, payload: &mut Metamap) -> Result<(), anyhow::Error> {
         for index in (0..index + 1).rev() {
             println!("[{}] Rolling: {}", index, self.steps[index].name);
-            let res = self.steps[index]
-                .handler
-                .rollback(payload.take().unwrap())
-                .unwrap();
-            payload = Some(res);
+            let r = self.steps[index].handler.rollback(payload);
+            if r.is_err() {
+                println!("[{}] Rollback failed: {}", index, r.err().unwrap());
+            }
         }
-        Ok(payload)
+        Ok(())
     }
 }
 
@@ -84,91 +75,31 @@ mod tests {
         struct TestHandler;
 
         impl Handler for TestHandler {
-            fn run(&self, payload: Box<dyn any::Any>) -> Result<Box<dyn any::Any>, HandlerError> {
-                let payload = payload.downcast::<String>().unwrap();
-                let payload = payload.to_uppercase() + "1";
-                Ok(Box::new(payload))
+            fn execute(&self, payload: &mut Metamap) -> Result<(), anyhow::Error> {
+                let key: &mut String = payload.get_mut("key").unwrap();
+                *key = key.to_uppercase() + "1";
+                Ok(())
             }
 
-            fn rollback(
-                &self,
-                payload: Box<dyn any::Any>,
-            ) -> Result<Box<dyn any::Any>, HandlerError> {
-                let payload = payload.downcast::<String>().unwrap();
-                let payload = payload.to_lowercase();
-                Ok(Box::new(payload))
+            fn rollback(&self, payload: &mut Metamap) -> Result<(), anyhow::Error> {
+                let key: &mut String = payload.get_mut("key").unwrap();
+                *key = key.to_lowercase().replace("1", "");
+                Ok(())
             }
         }
         struct TestHandler2;
 
         impl Handler for TestHandler2 {
-            fn run(&self, payload: Box<dyn any::Any>) -> Result<Box<dyn any::Any>, HandlerError> {
-                let payload = payload.downcast::<String>().unwrap();
-                let payload = payload.to_uppercase() + "2";
-                Ok(Box::new(payload))
+            fn execute(&self, payload: &mut Metamap) -> Result<(), anyhow::Error> {
+                let key: &mut String = payload.get_mut("key").unwrap();
+                *key = key.to_string() + "2";
+                Ok(())
             }
 
-            fn rollback(
-                &self,
-                payload: Box<dyn any::Any>,
-            ) -> Result<Box<dyn any::Any>, HandlerError> {
-                let payload = payload.downcast::<String>().unwrap();
-                let payload = payload.to_lowercase();
-                Ok(Box::new(payload))
-            }
-        }
-
-        let flow = Flow::new("test".to_string())
-            .action(Action {
-                name: "test".to_string(),
-                handler: Box::new(TestHandler),
-            })
-            .action(Action {
-                name: "test2".to_string(),
-                handler: Box::new(TestHandler2),
-            });
-
-        let payload = Some(Box::new("test".to_string()) as Box<dyn any::Any>);
-        let res = flow.run(payload).unwrap().unwrap();
-        let res = *res.downcast::<String>().unwrap();
-        assert_eq!(res, "TEST12".to_string());
-    }
-
-    #[test]
-    fn test_flow_rollback() {
-        struct TestHandler;
-
-        impl Handler for TestHandler {
-            fn run(&self, payload: Box<dyn any::Any>) -> Result<Box<dyn any::Any>, HandlerError> {
-                let payload = payload.downcast::<String>().unwrap();
-                let payload = payload.to_uppercase() + "1";
-                Ok(Box::new(payload))
-            }
-
-            fn rollback(
-                &self,
-                payload: Box<dyn any::Any>,
-            ) -> Result<Box<dyn any::Any>, HandlerError> {
-                let payload = payload.downcast::<String>().unwrap();
-                let payload = payload.to_lowercase();
-                let payload = payload.replace("1", "");
-                Ok(Box::new(payload))
-            }
-        }
-        struct TestHandler2;
-
-        impl Handler for TestHandler2 {
-            fn run(&self, payload: Box<dyn any::Any>) -> Result<Box<dyn any::Any>, HandlerError> {
-                Err(HandlerError(payload, anyhow::anyhow!("test error")))
-            }
-
-            fn rollback(
-                &self,
-                payload: Box<dyn any::Any>,
-            ) -> Result<Box<dyn any::Any>, HandlerError> {
-                let payload = payload.downcast::<String>().unwrap();
-                let payload = payload.to_lowercase();
-                Ok(Box::new(payload))
+            fn rollback(&self, payload: &mut Metamap) -> Result<(), anyhow::Error> {
+                let key: &mut String = payload.get_mut("key").unwrap();
+                *key = key.to_lowercase().replace("2", "");
+                Ok(())
             }
         }
 
@@ -176,9 +107,55 @@ mod tests {
             .action(Action::new("test", TestHandler))
             .action(Action::new("test2", TestHandler2));
 
-        let payload = Some(Box::new("test".to_string()) as Box<dyn any::Any>);
-        let res = flow.run(payload).unwrap().unwrap();
-        let res = *res.downcast::<String>().unwrap();
-        assert_eq!(res, "test".to_string());
+        let mut payload = Metamap::new();
+        payload.set("key", "test".to_string());
+        flow.execute(&mut payload).unwrap();
+        let res: &String = payload.get("key").unwrap();
+        assert_eq!(res, "TEST12");
+    }
+
+    #[test]
+    fn test_flow_rollback() {
+        struct TestHandler;
+
+        impl Handler for TestHandler {
+            fn execute(&self, payload: &mut Metamap) -> Result<(), anyhow::Error> {
+                let key: &mut String = payload.get_mut("key").unwrap();
+                *key = key.to_uppercase() + "1";
+                Ok(())
+            }
+
+            fn rollback(&self, payload: &mut Metamap) -> Result<(), anyhow::Error> {
+                let key: &mut String = payload.get_mut("key").unwrap();
+                *key = key.to_lowercase().replace("1", "");
+                Ok(())
+            }
+        }
+        struct TestHandler2;
+
+        impl Handler for TestHandler2 {
+            fn execute(&self, payload: &mut Metamap) -> Result<(), anyhow::Error> {
+                let key: &mut String = payload.get_mut("key").unwrap();
+                *key = key.to_string() + "2";
+                Err(anyhow::anyhow!("Error"))
+            }
+
+            fn rollback(&self, payload: &mut Metamap) -> Result<(), anyhow::Error> {
+                let key: &mut String = payload.get_mut("key").unwrap();
+                *key = key.to_lowercase().replace("2", "");
+                Ok(())
+            }
+        }
+
+        let flow = Flow::new("test".to_string())
+            .action(Action::new("test", TestHandler))
+            .action(Action::new("test2", TestHandler2));
+
+        let mut payload = Metamap::new();
+        payload.set("key", "test".to_string());
+        let r = flow.execute(&mut payload);
+        let res: &String = payload.get("key").unwrap();
+        assert_eq!(res, "test");
+        assert!(r.is_err());
     }
 }

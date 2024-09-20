@@ -13,7 +13,7 @@ export function reqArgs(dto: any, paths: any, pathKey: string, method: string) {
     // Check if the method exists
     if (pathMethod) {
       // Get the URL from the path
-      url = transformUrlByDto(dto, pathMethod.parameters);
+      url = transformUrlByDto(dto, pathKey, pathMethod?.parameters);
 
       // Get the request body schema from the path
       const requestBodySchema =
@@ -55,8 +55,7 @@ function transformBodyByDto(dto: any, schema: any) {
   return body;
 }
 
-function transformUrlByDto(dto: any, parameters: any[]) {
-  let url = "";
+function transformUrlByDto(dto: any, url: string, parameters: any[] = []) {
   const parametersMap = {};
 
   parameters.forEach((param) => {

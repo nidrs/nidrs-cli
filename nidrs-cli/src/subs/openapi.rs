@@ -65,11 +65,11 @@ impl OpenapiBuilder {
 
                         let controller = controllers.entry(x_controller).or_insert_with(|| {
                             let mut controller = HashMap::new();
-                            controller.insert(x_router, opr);
+                            controller.insert(x_router, (method, path, opr));
                             controller
                         });
 
-                        controller.insert(x_router, opr);
+                        controller.insert(x_router, (method, path, opr));
                     }
                 }
             }
@@ -77,25 +77,34 @@ impl OpenapiBuilder {
 
         println!("{:#?}", controllers);
 
-        let mut ts = String::new();
+        let mut ts =
+            "// @ts-nocheck eslint-disable prettier-ignore\nimport { reqHandler, resHandler } from \"@nidrs/openapi-client-js\";\n\n".to_string();
 
         for (controller, router) in &controllers {
-            ts.push_str(&format!("export class {} {{\n", controller));
+            ts.push_str(&format!(
+                "/* prettier-ignore */\nexport class {} {{\n",
+                controller
+            ));
             ts.push_str("  constructor(private api: Api) {}\n");
             for (router, opr) in router {
-                ts.push_str(&format!("  {}() {{\n", router));
-                ts.push_str("    // todo\n");
+                let method = opr.0;
+                let path = opr.1;
+                ts.push_str(&format!("  async {}(dto:any) {{\n", router));
+                ts.push_str(&format!(
+                    "    return resHandler(await this.api.request(reqHandler(dto, '{method}', '{path}', this.api.openapi)))\n"
+                ));
                 ts.push_str("  }\n");
             }
             ts.push_str("}\n");
         }
 
-        ts.push_str("export class Api {\n");
+        ts.push_str("/* prettier-ignore */\nexport class Api {\n");
         for (controller, _) in controllers {
             let key = to_camel_case(controller).replace("Controller", "");
             ts.push_str(&format!("  {} = new {}(this);\n", key, controller));
         }
-        ts.push_str("  constructor(private request: any) {}\n");
+        ts.push_str(&format!("  openapi = {};\n", self.openapi));
+        ts.push_str("  constructor(public request: any) {}\n");
         ts.push_str("}\n");
 
         ts

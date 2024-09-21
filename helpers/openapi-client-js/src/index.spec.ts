@@ -1,4 +1,4 @@
-import { reqArgs } from "./index";
+import { reqHandler } from "./index";
 
 describe("Index", () => {
   it("should get reqArgs", () => {
@@ -34,7 +34,7 @@ describe("Index", () => {
     const pathKey = "/test";
     const method = "get";
 
-    const result = reqArgs(dto, paths, pathKey, method);
+    const result = reqHandler(dto, paths, pathKey, method);
 
     expect(result).toEqual({
       method: "GET",
@@ -76,7 +76,7 @@ describe("Index", () => {
     const pathKey = "/test";
     const method = "post";
 
-    const result = reqArgs(dto, paths, pathKey, method);
+    const result = reqHandler(dto, paths, pathKey, method);
 
     expect(result).toEqual({
       method: "POST",
@@ -130,7 +130,7 @@ describe("Index", () => {
     const pathKey = "/test/{id}";
     const method = "get";
 
-    const result = reqArgs(dto, paths, pathKey, method);
+    const result = reqHandler(dto, paths, pathKey, method);
 
     expect(result).toEqual({
       method: "GET",

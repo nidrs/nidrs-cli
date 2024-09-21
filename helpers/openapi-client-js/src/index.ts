@@ -1,4 +1,9 @@
-export function reqArgs(dto: any, paths: any, pathKey: string, method: string) {
+export function reqHandler(
+  dto: any,
+  paths: any,
+  pathKey: string,
+  method: string
+) {
   let url = "";
   let body = {};
 

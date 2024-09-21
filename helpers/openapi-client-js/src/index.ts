@@ -4,7 +4,7 @@ export function reqHandler(
   dto: any,
   method: string,
   pathKey: string,
-  paths: any
+  { paths }: any
 ) {
   let url = "";
   let body = {};

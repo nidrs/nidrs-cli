@@ -35,7 +35,7 @@ describe("Index", () => {
     const pathKey = "/test";
     const method = "get";
 
-    const result = reqHandler(dto, method, pathKey, paths);
+    const result = reqHandler(dto, method, pathKey, { paths });
 
     expect(result).toEqual({
       method: "GET",
@@ -77,7 +77,7 @@ describe("Index", () => {
     const pathKey = "/test";
     const method = "post";
 
-    const result = reqHandler(dto, method, pathKey, paths);
+    const result = reqHandler(dto, method, pathKey, { paths });
 
     expect(result).toEqual({
       method: "POST",
@@ -131,7 +131,7 @@ describe("Index", () => {
     const pathKey = "/test/{id}";
     const method = "get";
 
-    const result = reqHandler(dto, method, pathKey, paths);
+    const result = reqHandler(dto, method, pathKey, { paths });
 
     expect(result).toEqual({
       method: "GET",

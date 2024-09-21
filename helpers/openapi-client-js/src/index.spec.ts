@@ -1,4 +1,5 @@
-import { reqHandler } from "./index";
+import { HttpException } from "./execption";
+import { reqHandler, resHandler } from "./index";
 
 describe("Index", () => {
   it("should get reqArgs", () => {
@@ -137,5 +138,27 @@ describe("Index", () => {
       url: "/test/iddd?name=test&age=10",
       body: {},
     });
+  });
+
+  it("resHandler should return data", () => {
+    const response = {
+      status: 200,
+      data: "data",
+    };
+
+    const result = resHandler(response);
+
+    expect(result).toEqual("data");
+  });
+
+  it("resHandler should throw error", () => {
+    const response = {
+      status: 400,
+      statusText: "error",
+    };
+
+    expect(() => resHandler(response)).toThrow(
+      new HttpException("error", response)
+    );
   });
 });

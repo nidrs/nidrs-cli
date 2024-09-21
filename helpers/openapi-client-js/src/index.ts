@@ -1,3 +1,5 @@
+import { HttpException } from "./execption";
+
 export function reqHandler(
   dto: any,
   paths: any,
@@ -37,6 +39,13 @@ export function reqHandler(
     url: url,
     body: body,
   };
+}
+
+export function resHandler(response: any) {
+  if (response.status >= 400) {
+    throw new HttpException(response.statusText, response);
+  }
+  return response.data;
 }
 
 function transformBodyByDto(dto: any, schema: any) {

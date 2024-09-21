@@ -2,9 +2,9 @@ import { HttpException } from "./execption";
 
 export function reqHandler(
   dto: any,
-  paths: any,
+  method: string,
   pathKey: string,
-  method: string
+  paths: any
 ) {
   let url = "";
   let body = {};

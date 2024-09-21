@@ -2,7 +2,7 @@ import { HttpException } from "./execption";
 import { reqHandler, resHandler } from "./index";
 
 describe("Index", () => {
-  it("should get reqArgs", () => {
+  it("should get reqHandler", () => {
     const dto = {
       name: "test",
       age: 10,
@@ -35,7 +35,7 @@ describe("Index", () => {
     const pathKey = "/test";
     const method = "get";
 
-    const result = reqHandler(dto, paths, pathKey, method);
+    const result = reqHandler(dto, method, pathKey, paths);
 
     expect(result).toEqual({
       method: "GET",
@@ -44,7 +44,7 @@ describe("Index", () => {
     });
   });
 
-  it("should post reqArgs", () => {
+  it("should post reqHandler", () => {
     const dto = {
       name: "test",
       age: 10,
@@ -77,7 +77,7 @@ describe("Index", () => {
     const pathKey = "/test";
     const method = "post";
 
-    const result = reqHandler(dto, paths, pathKey, method);
+    const result = reqHandler(dto, method, pathKey, paths);
 
     expect(result).toEqual({
       method: "POST",
@@ -89,7 +89,7 @@ describe("Index", () => {
     });
   });
 
-  it("should params reqArgs", () => {
+  it("should params reqHandler", () => {
     const dto = {
       id: "iddd",
       name: "test",
@@ -131,7 +131,7 @@ describe("Index", () => {
     const pathKey = "/test/{id}";
     const method = "get";
 
-    const result = reqHandler(dto, paths, pathKey, method);
+    const result = reqHandler(dto, method, pathKey, paths);
 
     expect(result).toEqual({
       method: "GET",

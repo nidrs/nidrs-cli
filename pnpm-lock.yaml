@@ -6,7 +6,7 @@ settings:
 
 importers:
 
-  helpers/openapi-client-js:
+  packages/openapi-client-js:
     devDependencies:
       '@babel/core':
         specifier: ^7.25.2

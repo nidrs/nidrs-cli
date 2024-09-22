@@ -1,2 +1,2 @@
 packages:
-  - "helpers/openapi-client-js"
+  - "packages/openapi-client-js"

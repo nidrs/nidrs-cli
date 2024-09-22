@@ -1,6 +1,13 @@
-export declare function reqArgs(dto: any, paths: any, pathKey: string, method: string): {
+export * from "./adapt/fetchAdapt";
+export * from "./errors";
+export declare function reqHandler(dto: any, method: string, pathKey: string, { paths }: any): {
     method: string;
     url: string;
-    body: {};
+    body: any;
+    headers: {
+        accept: string;
+        "content-type": string;
+    };
 };
+export declare function resHandler(response: any): any;
 //# sourceMappingURL=index.d.ts.map

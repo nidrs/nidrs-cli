@@ -1,4 +1,7 @@
-import { HttpException } from "./execption";
+export * from "./adapt/fetchAdapt";
+export * from "./errors";
+
+import { ClientError, HttpException } from "./errors";
 
 export function reqHandler(
   dto: any,
@@ -7,37 +10,45 @@ export function reqHandler(
   { paths }: any
 ) {
   let url = "";
-  let body = {};
+  let body = undefined;
 
   // Find the path in the openapi paths object
   const path = paths[pathKey];
 
   // Check if the path exists
-  if (path) {
-    // Find the method in the path object
-    const pathMethod = path[method];
+  if (!path) {
+    throw new ClientError(`Path not found: ${pathKey}`, paths);
+  }
+  // Find the method in the path object
+  const pathMethod = path[method];
 
-    // Check if the method exists
-    if (pathMethod) {
-      // Get the URL from the path
-      url = transformUrlByDto(dto, pathKey, pathMethod?.parameters);
+  // Check if the method exists
+  if (!pathMethod) {
+    throw new ClientError(`Method not found: ${method}`, path);
+  }
+  // Get the URL from the path
+  url = transformUrlByDto(dto, pathKey, pathMethod?.parameters);
 
-      // Get the request body schema from the path
-      const requestBodySchema =
-        pathMethod.requestBody?.content?.["application/json"]?.schema;
+  const contentType = extractContentType(pathMethod);
 
-      // Check if the request body schema exists
-      if (requestBodySchema) {
-        // Validate and transform the DTO based on the request body schema
-        body = transformBodyByDto(dto, requestBodySchema);
-      }
-    }
+  // Get the request body schema from the path
+  const requestBodySchema =
+    pathMethod.requestBody?.content?.[contentType]?.schema;
+
+  // Check if the request body schema exists
+  if (requestBodySchema) {
+    // Validate and transform the DTO based on the request body schema
+    body = transformBodyByDto(dto, requestBodySchema);
   }
 
   return {
     method: method.toUpperCase(),
     url: url,
     body: body,
+    headers: {
+      accept: extractAccept(pathMethod),
+      "content-type": contentType,
+    },
   };
 }
 
@@ -46,6 +57,23 @@ export function resHandler(response: any) {
     throw new HttpException(response.statusText, response);
   }
   return response.data;
+}
+
+function extractAccept(pathMethod: any) {
+  for (const responseCode in pathMethod.responses) {
+    const response = pathMethod.responses[responseCode];
+    for (const contentType in response.content) {
+      return contentType;
+    }
+  }
+  return undefined;
+}
+
+function extractContentType(pathMethod: any) {
+  for (const contentType in pathMethod?.requestBody?.content) {
+    return contentType;
+  }
+  return undefined;
 }
 
 function transformBodyByDto(dto: any, schema: any) {

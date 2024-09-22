@@ -1,2 +1,3 @@
 packages:
   - "packages/openapi-client-js"
+  - "examples/openapi-client-js-demo"

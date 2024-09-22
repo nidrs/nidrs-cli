@@ -1,4 +1,4 @@
-import { HttpException } from "./execption";
+import { HttpException } from "./errors";
 import { reqHandler, resHandler } from "./index";
 
 describe("Index", () => {
@@ -40,7 +40,11 @@ describe("Index", () => {
     expect(result).toEqual({
       method: "GET",
       url: "/test?name=test&age=10",
-      body: {},
+      body: undefined,
+      headers: {
+        accept: undefined,
+        "content-type": undefined,
+      },
     });
   });
 
@@ -85,6 +89,10 @@ describe("Index", () => {
       body: {
         name: "test",
         age: 10,
+      },
+      headers: {
+        accept: undefined,
+        "content-type": "application/json",
       },
     });
   });
@@ -136,7 +144,11 @@ describe("Index", () => {
     expect(result).toEqual({
       method: "GET",
       url: "/test/iddd?name=test&age=10",
-      body: {},
+      body: undefined,
+      headers: {
+        accept: undefined,
+        "content-type": undefined,
+      },
     });
   });
 

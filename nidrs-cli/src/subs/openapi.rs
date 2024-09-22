@@ -29,16 +29,15 @@ impl Openapi {
     pub fn run(&self) {
         let openapi_url = format!("{}/api-docs/openapi.json", self.serve);
         let openapi_json = OpenapiBuilder::new(&openapi_url);
-        openapi_json.to_ts();
         // println!("{:?}", openapi_json.openapi);
 
         let out_dir = self.out_dir.as_ref().unwrap();
         let out_file = format!("{}/api.ts", out_dir);
         let out_path = PathBuf::from(&out_file);
 
-        println!("out_path: {:?}", out_path);
         let mut file = std::fs::File::create(&out_path).unwrap();
         file.write_all(openapi_json.to_ts().as_bytes()).unwrap();
+        println!("[Openapi] out_path: {:?}", out_path);
     }
 }
 
@@ -75,7 +74,7 @@ impl OpenapiBuilder {
             }
         }
 
-        println!("{:#?}", controllers);
+        // println!("{:#?}", controllers);
 
         let mut ts =
             "// @ts-nocheck eslint-disable prettier-ignore\nimport { reqHandler, resHandler } from \"@nidrs/openapi-client-js\";\n\n".to_string();

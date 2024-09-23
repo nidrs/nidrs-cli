@@ -1,6 +1,6 @@
 use std::{
     any,
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     io::{BufRead, Write},
     path::PathBuf,
 };
@@ -164,7 +164,57 @@ impl OpenapiBuilder {
             for (router, opr) in router {
                 let method = opr.0;
                 let path = opr.1;
-                ts.push_str(&format!("  async {}(dto:any) {{\n", router));
+                let description = opr.2["description"].as_str().unwrap_or_default();
+                let parameters: Option<&Vec<serde_json::Value>> =
+                    opr.2.get("parameters").map(|p| p.as_array().unwrap());
+                let mut dto_keys = HashMap::<&str, Vec<&serde_json::Value>>::new();
+                if let Some(parameters) = parameters {
+                    parameters.iter().for_each(|param| {
+                        let name = param["name"].as_str().unwrap();
+
+                        let keys = dto_keys.entry(name).or_insert_with(Vec::new);
+
+                        keys.push(param);
+                    });
+                }
+                let mut dto_types = "{\n".to_string();
+
+                for (name, keys) in &dto_keys {
+                    if keys.len() > 1 {
+                        for key in keys {
+                            let t_in = key["in"].as_str().unwrap();
+                            let t_type =
+                                trans_to_ts_type(key["schema"]["type"].as_str().unwrap_or("any"));
+                            let t_required = key["required"].as_bool().unwrap_or(false);
+                            let t_required = if t_required { "" } else { "?" };
+                            dto_types.push_str(&format!(
+                                "    ['{}({})']{}: {},\n",
+                                t_in, name, t_required, t_type
+                            ));
+                        }
+                        dto_types.push_str(&format!("    ['{}']?: any,\n", name));
+                    } else {
+                        // == 1
+                        let t_type =
+                            trans_to_ts_type(keys[0]["schema"]["type"].as_str().unwrap_or("any"));
+                        let t_required = keys[0]["required"].as_bool().unwrap_or(false);
+                        let t_required = if t_required { "" } else { "?" };
+                        dto_types
+                            .push_str(&format!("    ['{}']{}: {},\n", name, t_required, t_type));
+                    }
+                }
+
+                dto_types.push_str("  }");
+                let dto_types = if dto_keys.len() == 0 {
+                    "any"
+                } else {
+                    &dto_types
+                };
+                // let dto_types = "any";
+                ts.push_str(&format!("  /**\n"));
+                ts.push_str(&format!("   * {}\n", description));
+                ts.push_str(&format!("   */\n"));
+                ts.push_str(&format!("  async {}(dto:{}) {{\n", router, dto_types));
                 ts.push_str(&format!(
                     "    return resHandler(await this.api.request(reqHandler(dto, '{method}', '{path}', this.api.openapi)))\n"
                 ));
@@ -207,4 +257,16 @@ fn to_camel_case(s: &str) -> String {
     }
 
     result
+}
+
+fn trans_to_ts_type(t: &str) -> &str {
+    match t {
+        "string" => "string",
+        "number" => "number",
+        "integer" => "number",
+        "boolean" => "boolean",
+        "array" => "any[]",
+        "object" => "any",
+        _ => "any",
+    }
 }

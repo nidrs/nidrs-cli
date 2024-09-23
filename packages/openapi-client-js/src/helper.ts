@@ -4,7 +4,7 @@
  * @returns
  */
 export function Q(key: string) {
-  return `q/${key}`;
+  return `query(${key})`;
 }
 
 /**
@@ -13,7 +13,7 @@ export function Q(key: string) {
  * @returns
  */
 export function P(key: string) {
-  return `p/${key}`;
+  return `path(${key})`;
 }
 
 /**
@@ -22,5 +22,5 @@ export function P(key: string) {
  * @returns
  */
 export function B(key: string) {
-  return `b/${key}`;
+  return `body(${key})`;
 }

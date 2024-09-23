@@ -1,4 +1,3 @@
-import { P, Q } from "@nidrs/openapi-client-js";
 import api from "./api";
 
 export function fetchDemo(element: HTMLButtonElement) {
@@ -8,8 +7,8 @@ export function fetchDemo(element: HTMLButtonElement) {
     });
     await api.user
       .get_one({
-        [P("id")]: 22,
-        [Q("id")]: 12,
+        ["query(id)"]: 22,
+        ["path(id)"]: 12,
         filter: "filter",
         page: 1,
         size: 10,

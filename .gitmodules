@@ -1,0 +1,3 @@
+[submodule "templates/api-client"]
+	path = templates/api-client
+	url = https://github.com/nidrs/tempalte-client-js

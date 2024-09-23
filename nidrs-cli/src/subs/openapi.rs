@@ -36,6 +36,18 @@ impl Openapi {
         let client_index_file = client_dir_path.join("index.ts");
 
         if out_dir_path.exists() {
+            let pkg_json_path = out_dir_path.join("package.json");
+            if pkg_json_path.exists() {
+                let pkg_json = std::fs::read_to_string(&pkg_json_path).unwrap();
+                if !pkg_json.contains("templates/api-client") {
+                    // 不能覆盖该目录
+                    println!(
+                        "[Openapi] {:?} is not a valid api-client sdk, not overwrite.",
+                        out_dir_path
+                    );
+                    return;
+                }
+            }
             if self.yes {
                 println!("[Openapi] remove {:?}", out_dir_path);
                 let _ = std::fs::remove_dir_all(&out_dir_path);

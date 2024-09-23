@@ -53,11 +53,11 @@ export function reqHandler(
   };
 }
 
-export function resHandler(response: any) {
+export function resHandler<R = unknown>(response: any): R {
   if (response.status >= 400) {
     throw new HttpException(response.statusText, response);
   }
-  return response.data;
+  return response.data as R;
 }
 
 function extractAccept(pathMethod: any) {

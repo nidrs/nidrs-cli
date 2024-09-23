@@ -1,8 +1,10 @@
 export * from "./adapt/fetchAdapt";
 export * from "./errors";
 export * from "./api";
+export * from "./helper";
 
 import { ClientError, HttpException } from "./errors";
+import { B, P, Q } from "./helper";
 
 export function reqHandler(
   dto: any,
@@ -90,9 +92,7 @@ function transformBodyByDto(dto: any, schema: any) {
     }
 
     // Check if the property exists in the DTO
-    if (dto[key] !== undefined) {
-      body[key] = dto[key];
-    }
+    body[key] = dto[key] ?? dto[B(key)];
   }
 
   return body;
@@ -110,7 +110,7 @@ function transformUrlByDto(dto: any, url: string, parameters: any[] = []) {
 
   parametersMap["path"]?.forEach((param) => {
     const paramName = param.name;
-    const paramValue = dto[paramName];
+    const paramValue = dto[paramName] ?? dto[P(paramName)];
 
     // Replace the parameter in the URL
     url = url.replace(`{${paramName}}`, encodeURIComponent(paramValue));
@@ -118,7 +118,7 @@ function transformUrlByDto(dto: any, url: string, parameters: any[] = []) {
 
   parametersMap["query"]?.forEach((param) => {
     const paramName = param.name;
-    const paramValue = dto[paramName];
+    const paramValue = dto[paramName] ?? dto[Q(paramName)];
 
     // Append the parameter to the URL
     url += `${url.includes("?") ? "&" : "?"}${paramName}=${encodeURIComponent(

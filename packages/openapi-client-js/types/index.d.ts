@@ -1,6 +1,7 @@
 export * from "./adapt/fetchAdapt";
 export * from "./errors";
 export * from "./api";
+export * from "./helper";
 export declare function reqHandler(dto: any, method: string, pathKey: string, { paths }: any): {
     method: string;
     url: string;

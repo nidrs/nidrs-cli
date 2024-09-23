@@ -60,6 +60,31 @@ class Api {
     }
 }
 
+/**
+ * Query params injection
+ * @param key
+ * @returns
+ */
+function Q(key) {
+    return `q/${key}`;
+}
+/**
+ * Path params injection
+ * @param key
+ * @returns
+ */
+function P(key) {
+    return `p/${key}`;
+}
+/**
+ * Body params injection
+ * @param key
+ * @returns
+ */
+function B(key) {
+    return `b/${key}`;
+}
+
 function reqHandler(dto, method, pathKey, { paths }) {
     let url = "";
     let body = undefined;
@@ -126,9 +151,7 @@ function transformBodyByDto(dto, schema) {
             throw new Error(`Missing required property: ${key}`);
         }
         // Check if the property exists in the DTO
-        if (dto[key] !== undefined) {
-            body[key] = dto[key];
-        }
+        body[key] = dto[key] ?? dto[B(key)];
     }
     return body;
 }
@@ -142,13 +165,13 @@ function transformUrlByDto(dto, url, parameters = []) {
     });
     parametersMap["path"]?.forEach((param) => {
         const paramName = param.name;
-        const paramValue = dto[paramName];
+        const paramValue = dto[paramName] ?? dto[P(paramName)];
         // Replace the parameter in the URL
         url = url.replace(`{${paramName}}`, encodeURIComponent(paramValue));
     });
     parametersMap["query"]?.forEach((param) => {
         const paramName = param.name;
-        const paramValue = dto[paramName];
+        const paramValue = dto[paramName] ?? dto[Q(paramName)];
         // Append the parameter to the URL
         url += `${url.includes("?") ? "&" : "?"}${paramName}=${encodeURIComponent(paramValue)}`;
     });
@@ -156,8 +179,11 @@ function transformUrlByDto(dto, url, parameters = []) {
 }
 
 exports.Api = Api;
+exports.B = B;
 exports.ClientError = ClientError;
 exports.HttpException = HttpException;
+exports.P = P;
+exports.Q = Q;
 exports.fetchAdapt = fetchAdapt;
 exports.reqHandler = reqHandler;
 exports.resHandler = resHandler;

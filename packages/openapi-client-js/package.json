@@ -1,6 +1,6 @@
 {
   "name": "@nidrs/openapi-client-js",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "nidrs openapi client js helper tools.",
   "author": "Lydanne <1829913225@qq.com>",
   "homepage": "https://github.com/nidrs/nidrs-cli/helpers/openapi-client-js#readme",

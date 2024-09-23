@@ -37,7 +37,7 @@
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.4",
     "@rollup/plugin-node-resolve": "^15.2.3",
-    "@rollup/plugin-typescript": "^11.1.6",
+    "@rollup/plugin-typescript": "12.1.0",
     "@types/jest": "^29.5.13",
     "@types/node": "22.5.5",
     "babel-jest": "^29.7.0",

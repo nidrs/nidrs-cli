@@ -4,10 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "postinstall": "npm run build:api",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "build:api": "cargo run --bin nid openapi http://localhost:3000 -o ./src/api/"
+    "build:api": "cargo run --bin nid openapi http://localhost:3000 --yes"
   },
   "devDependencies": {
     "typescript": "^5.5.3",

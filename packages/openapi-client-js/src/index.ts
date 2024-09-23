@@ -1,5 +1,6 @@
 export * from "./adapt/fetchAdapt";
 export * from "./errors";
+export * from "./api";
 
 import { ClientError, HttpException } from "./errors";
 

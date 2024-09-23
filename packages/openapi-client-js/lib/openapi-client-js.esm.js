@@ -48,6 +48,16 @@ class HttpException extends Error {
     }
 }
 
+/**
+ * API 接口文件，最终会被 `nid openapi` 命令生成的代码覆盖
+ */
+class Api {
+    request;
+    constructor(request) {
+        this.request = request;
+    }
+}
+
 function reqHandler(dto, method, pathKey, { paths }) {
     let url = "";
     let body = undefined;
@@ -143,5 +153,5 @@ function transformUrlByDto(dto, url, parameters = []) {
     return url;
 }
 
-export { ClientError, HttpException, fetchAdapt, reqHandler, resHandler };
+export { Api, ClientError, HttpException, fetchAdapt, reqHandler, resHandler };
 //# sourceMappingURL=openapi-client-js.esm.js.map

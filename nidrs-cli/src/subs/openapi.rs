@@ -5,8 +5,7 @@ use std::{
     path::PathBuf,
 };
 
-use serde::de::Error;
-use toml::Table;
+use crate::shared::exec_cmd;
 
 /// eg: nid openapi "http://localhost:3000" --yes
 #[derive(clap::Parser, Debug)]
@@ -14,7 +13,7 @@ pub struct Openapi {
     #[clap(default_value = "http://localhost:3000")]
     serve: String,
 
-    #[clap(short, long, default_value = "./")]
+    #[clap(short, long, default_value = "./node_modules/@nidist/api-client")]
     out_dir: Option<String>,
 
     /// default: ts
@@ -32,12 +31,77 @@ impl Openapi {
         // println!("{:?}", openapi_json.openapi);
 
         let out_dir = self.out_dir.as_ref().unwrap();
-        let out_file = format!("{}/api.ts", out_dir);
-        let out_path = PathBuf::from(&out_file);
+        let out_dir_path = PathBuf::from(out_dir);
+        let client_dir_path = out_dir_path.join("client");
+        let client_index_file = client_dir_path.join("index.ts");
 
-        let mut file = std::fs::File::create(&out_path).unwrap();
+        if out_dir_path.exists() {
+            if self.yes {
+                println!("[Openapi] remove {:?}", out_dir_path);
+                let _ = std::fs::remove_dir_all(&out_dir_path);
+            } else {
+                let mut input = String::new();
+                print!(
+                    "[Openapi] {:?} is exists, overwrite? (y/n): ",
+                    out_dir_path.display()
+                );
+                std::io::stdout().flush().unwrap();
+                std::io::stdin().read_line(&mut input).unwrap();
+                if input.contains("y") {
+                    println!("[Openapi] remove {:?}", out_dir_path);
+                    let _ = std::fs::remove_dir_all(&out_dir_path);
+                } else {
+                    return;
+                }
+            }
+        }
+
+        let template_url = "https://github.com/nidrs/tempalte-client-js";
+        // git clone
+        exec_cmd(
+            "Git",
+            std::process::Command::new("git")
+                .arg("clone")
+                .arg("--progress")
+                .arg(&template_url)
+                .arg(&out_dir_path),
+        )
+        .unwrap();
+
+        // remove .git
+        let git_path = out_dir_path.join(".git");
+
+        let _ = std::fs::remove_dir_all(git_path);
+
+        let mut file = std::fs::File::create(&client_index_file).unwrap();
         file.write_all(openapi_json.to_ts().as_bytes()).unwrap();
-        println!("[Openapi] out_path: {:?}", out_path);
+
+        exec_cmd(
+            "Build(0)",
+            std::process::Command::new("npm")
+                .arg("install")
+                .current_dir(&client_dir_path),
+        )
+        .unwrap();
+
+        exec_cmd(
+            "Build(1)",
+            std::process::Command::new("npm")
+                .arg("run")
+                .arg("build")
+                .current_dir(&client_dir_path),
+        )
+        .unwrap();
+
+        // exec_cmd(
+        //     "Link",
+        //     std::process::Command::new("npm")
+        //         .arg("link")
+        //         .current_dir(&client_dir_path),
+        // )
+        // .unwrap();
+
+        println!("[Openapi] build api client sdk: {:?}", out_dir_path);
     }
 }
 

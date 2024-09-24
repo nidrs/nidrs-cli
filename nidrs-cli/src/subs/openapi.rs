@@ -5,6 +5,8 @@ use std::{
     path::PathBuf,
 };
 
+use serde_json::{json, Value};
+
 use crate::shared::exec_cmd;
 
 /// eg: nid openapi "http://localhost:3000" --yes
@@ -161,22 +163,47 @@ impl OpenapiBuilder {
                 controller
             ));
             ts.push_str("  constructor(private api: Api) {}\n");
+
             for (router, opr) in router {
                 let method = opr.0;
                 let path = opr.1;
                 let description = opr.2["description"].as_str().unwrap_or_default();
                 let parameters: Option<&Vec<serde_json::Value>> =
                     opr.2.get("parameters").map(|p| p.as_array().unwrap());
-                let mut dto_keys = HashMap::<&str, Vec<&serde_json::Value>>::new();
+                let mut dto_keys = HashMap::<&str, Vec<serde_json::Value>>::new();
                 if let Some(parameters) = parameters {
                     parameters.iter().for_each(|param| {
                         let name = param["name"].as_str().unwrap();
 
                         let keys = dto_keys.entry(name).or_insert_with(Vec::new);
 
-                        keys.push(param);
+                        keys.push(param.to_owned());
                     });
                 }
+
+                let request_body = opr.2.get("requestBody").map(|p| p.as_object().unwrap());
+                if let Some(request_body) = request_body {
+                    let content = request_body["content"]["application/json"]["schema"]
+                        .as_object()
+                        .unwrap();
+                    let properties = content["properties"].as_object().unwrap();
+                    for (name, schema) in properties {
+                        let keys = dto_keys.entry(name).or_insert_with(Vec::new);
+                        let mut required_array = vec![];
+                        if let Some(required) = content["required"].as_array() {
+                            for r in required {
+                                required_array.push(r.as_str().unwrap().to_string());
+                            }
+                        }
+                        let obj = json!({
+                            "in": "body",
+                            "schema": schema,
+                            "required": required_array.contains(name)
+                        });
+                        keys.push(obj);
+                    }
+                }
+
                 let mut dto_types = "{\n".to_string();
 
                 for (name, keys) in &dto_keys {
@@ -210,13 +237,84 @@ impl OpenapiBuilder {
                 } else {
                     &dto_types
                 };
-                // let dto_types = "any";
+
+                let mut resp_body = HashMap::<&str, Vec<serde_json::Value>>::new();
+
+                let responses = opr.2["responses"]["200"]["content"]["application/json"]["schema"]
+                    .as_object()
+                    .or_else(|| {
+                        opr.2["responses"]["201"]["content"]["application/json"]["schema"]
+                            .as_object()
+                    });
+
+                if let Some(responses) = responses {
+                    let properties = responses["properties"].as_object();
+                    let mut required_array = vec![];
+                    if let Some(required) = responses["required"].as_array() {
+                        for r in required {
+                            required_array.push(r.as_str().unwrap().to_string());
+                        }
+                    }
+                    if let Some(properties) = properties {
+                        for (name, schema) in properties {
+                            let keys = resp_body.entry(name).or_insert_with(Vec::new);
+                            let obj = json!({
+                                "in": "body",
+                                "schema": schema,
+                                "required": required_array.contains(name)
+                            });
+                            keys.push(obj);
+                        }
+                    }
+                }
+
+                let resp_body = if resp_body.len() == 0 {
+                    "any".to_string()
+                } else {
+                    let mut types = "{\n".to_string();
+                    for (name, keys) in &resp_body {
+                        if keys.len() > 1 {
+                            for key in keys {
+                                let t_in = key["in"].as_str().unwrap();
+                                let t_type = trans_to_ts_type(
+                                    key["schema"]["type"].as_str().unwrap_or("any"),
+                                );
+                                let t_required = key["required"].as_bool().unwrap_or(false);
+                                let t_required = if t_required { "" } else { "?" };
+                                types.push_str(&format!(
+                                    "    ['{}({})']{}: {},\n",
+                                    t_in, name, t_required, t_type
+                                ));
+                            }
+                            types.push_str(&format!("    ['{}']?: any,\n", name));
+                        } else {
+                            // == 1
+                            let t_type = trans_to_ts_type(
+                                keys[0]["schema"]["type"].as_str().unwrap_or("any"),
+                            );
+                            let t_required = keys[0]["required"].as_bool().unwrap_or(false);
+                            let t_required = if t_required { "" } else { "?" };
+                            types.push_str(&format!(
+                                "    ['{}']{}: {},\n",
+                                name, t_required, t_type
+                            ));
+                        }
+                    }
+
+                    types.push_str("  }");
+
+                    types
+                };
+
                 ts.push_str(&format!("  /**\n"));
                 ts.push_str(&format!("   * {}\n", description));
                 ts.push_str(&format!("   */\n"));
-                ts.push_str(&format!("  async {}(dto:{}) {{\n", router, dto_types));
                 ts.push_str(&format!(
-                    "    return resHandler(await this.api.request(reqHandler(dto, '{method}', '{path}', this.api.openapi)))\n"
+                    "  async {}(dto:{} = {{}}) {{\n",
+                    router, dto_types
+                ));
+                ts.push_str(&format!(
+                    "    return resHandler<{resp_body}>(await this.api.request(reqHandler(dto, '{method}', '{path}', this.api.openapi)))\n"
                 ));
                 ts.push_str("  }\n");
             }
